@@ -14,6 +14,7 @@ var SPAgent = require('./agents/TypeSelector').Agent;
 var PMMAgent = require('./agents/PBFS').Agent;
 var ProductionRuleAgent = require('./agents/ProductionRuleAgent').Agent;
 var OldAgent = require('./agents/ProductionRuleAgent').OldAgent;
+var MCTS = require('./agents/mcts/mcts').Agent;
 
 try {
     require.resolve('./zarel/config/config');
@@ -176,9 +177,9 @@ else {
     var scores = [];
 
     console.time('gametime');
-    for (var i = 0; i < 15; i++) {
+    for (var i = 0; i < 1; i++) {
         var game = new OfflineGame();
-        scores.push(game.playGames(new ProductionRuleAgent(), new OTLAgent(), 1, 'competitive'));
+        scores.push(game.playGames(new MCTS(new RandomAgent()), new OTLAgent(), 1, 'competitive'));
 
     }
     console.timeEnd('gametime');

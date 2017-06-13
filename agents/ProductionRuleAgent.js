@@ -10,10 +10,11 @@ var Switch = require('./rules/Switch');
 
 class ProductionRuleAgent {
 
-    constructor(){
+    constructor(restrictOutput = false){
       this.name = "PRA";
       this.rules = [];
       this.rules.push(new Rule.Query());
+      this.rules.push(new Move.ForceSkipWhenNoChoice());
       // this.rules.push(new Switch.TypeAdvantage());
       this.rules.push(new Status.TryToHeal(0.75));
       this.rules.push(new Status.TryToStatus(Status.EFFECTS['Sleep']));
@@ -23,12 +24,16 @@ class ProductionRuleAgent {
       this.rules.push(new ForceSwitch.MaxHP());
       this.rules.push(new Move.MinimalToKO());
       this.rules.push(new Move.MostDamage());
+
+      this.restrictOutput = restrictOutput;
     }
 
     decide(gameState, options, mySide, forceSwitch){
         for(var i = 0; i < this.rules.length; i++){
           var action = this.rules[i].execute(gameState, options, mySide, forceSwitch);
-          console.log("Rule : " + this.rules[i].name + " said: " + action)
+          if(!this.restrictOutput){
+            console.log("Rule : " + this.rules[i].name + " said: " + action);
+          }
           if(action) return action;
         }
         return this.fetch_random_key(options);

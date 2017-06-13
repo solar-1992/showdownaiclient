@@ -19,7 +19,6 @@ class TryToStatus extends Rule{
       if (options.hasOwnProperty(move)) {
         if(Tools.getMove(options[move].id).status === this.status){
           if(oppactive.status !== this.status){
-            console.log("Fired Status: " + this.status);
             return move;
           }
         }

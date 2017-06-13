@@ -75,6 +75,25 @@ class MinimalToKO extends Rule{
   }
 }
 
+class ForceSkipWhenNoChoice extends Rule{
+  constructor(){
+    super("ForceSkipWhenNoChoice");
+  }
+
+  execute(gameState, options, mySide, forceSwitch){
+    if(forceSwitch) return false;
+    var count = 0;
+    for (var move in options) {
+      if (options.hasOwnProperty(move)) {
+          count++;
+      }
+    }
+
+    if(count == 0) {return "forceskip";}else{ return false;}
+  }
+}
+
 exports.Random = RandomMove;
 exports.MostDamage = MostDamageMove;
 exports.MinimalToKO = MinimalToKO;
+exports.ForceSkipWhenNoChoice = ForceSkipWhenNoChoice;
