@@ -6,6 +6,7 @@ var Pokemon = require('../../zarel/battle-engine').BattlePokemon;
 class MCTS{
   constructor(policy){
     this.policy = policy;
+    this.treeDepthLimit = 30;
   }
 
   decide(gameState, options, mySide, forceSwitch){
@@ -23,20 +24,47 @@ class MCTS{
       current.backup(score);
       iterations++;
     }
+
+    return root.getBestNode().moveToThisState;
   }
 
   select(root, iterState, mySide){
     var current = root;
-    while(!iterState.isTerminal && current.depth < 30){
+    while(!iterState.isTerminal && current.depth < this.treeDepthLimit){
       // Is current fullyExpanded?
-      if(current.isFullyExpanded(getOptions(iterstate, mySide.n))){
-        current = current.getUCTNode(iterState);
+      var options = getOptions(iterstate, mySide.n);
+      if(current.isFullyExpanded(options)){
+        current = current.getUCTNode(iterState, options);
+        iterState = forwardState(iterState, current.moveToThisState);
       }else{
         current = expand(current, iterState, mySide);
         return current;
       }
     }
     return current;
+  }
+
+  policyDecide(iterState, side){
+    return this.policy.decide(
+      iterState,
+      getOptions(iterState, side),
+      iterState.sides[side],
+      false
+    );
+  }
+
+  forwardState(iterState){
+    return forwardState(iterState, policyDecide(iterState, 1));
+  }
+
+  forwardState(iterState, player1Choice){
+    return forwardState(iterState, player1Choice, policyDecide(iterState, 2));
+  }
+
+  forwardState(iterState, player1Choice, player2Choice){
+    iterState.choose('p1', player1Choice);
+    iterState.choose('p2', player2Choice);
+    return iterState;
   }
 
   getOptions(state, player) {
@@ -48,7 +76,10 @@ class MCTS{
 
 // Use policy on both sides
   rollout(current, iterState){
-    return 0;
+    while(!iterState.isTerminal){
+      iterState = forwardState(iterState);
+    }
+    return 0; //TODO Work out how to score this
   }
 
   expand(current, iterState, mySide){
@@ -94,15 +125,18 @@ class Node{
     return (this.score / this.visits) + (this.expConstant * Math.sqrt(Math.log(this.parent.visits) / this.visits);
   }
 
-  getUCTNode(gameState){
+  getUCTNode(gameState, options){
     var bestScore = this.children[0].getUCTValue;
     var bestNode = this.children[0];
 
-    for (var i = 1; i < children.length; i++) {
-      var score = children[i].getUCTValue();
+    for (var i = 1; i < this.children.length; i++) {
+      if(!options.includes(this.children[i].moveToThisState)){
+        continue;
+      }
+      var score = this.children[i].getUCTValue();
       if(bestScore < score){
         bestScore = score;
-        bestNode = children[i];
+        bestNode = this.children[i];
       }
     }
     return bestNode;
@@ -117,7 +151,7 @@ class Node{
       var score = this.children[i].score / visits;
       if(bestScore == null || bestScore < score){
         bestScore = score;
-        bestNode = children[i];
+        bestNode = this.children[i];
       }
     }
     return bestNode;
@@ -126,9 +160,18 @@ class Node{
   isFullyExpanded(options){
     if(this.children.length == 0) return false;
     for (var i = 0; i < options.length; i++) {
-      if(!childMoves.includes(options[i]) return false;
+      if(!this.childMoves.includes(options[i]) return false;
     }
     return true;
+  }
+
+  backup(score){
+    var current = this;
+    while(current != null){
+      current.score += score;
+      current.visits++;
+      current = current.parent;
+    }
   }
 }
 
