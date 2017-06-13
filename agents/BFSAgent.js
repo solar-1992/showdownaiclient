@@ -45,7 +45,7 @@ class MultiTLAgent {
                 this.badTerminal = true;
             }
         }
-        
+
         nstate.send = battleSend;
         var states = [];
         // Next we simulate the outcome of all our possible actions, while assuming our opponent does nothing each turn (uses splash, but it's kind of the same thing).
@@ -71,11 +71,11 @@ class MultiTLAgent {
         }
 
         // console.log(nothing);
-        
+
         var i = 0;
-        
+
         //console.log(gameState);
-        
+
         while ((new Date()).getTime() - n < 19000) {
             var cState = states.shift();
             if (!cState) {
@@ -94,7 +94,7 @@ class MultiTLAgent {
                 if (!nstate.badTerminal) {
                     states.push(nstate);
                 }
-            }            
+            }
         }
         // console.log('oops I timed out!');
         return this.fetch_random_key(options);
@@ -118,7 +118,7 @@ class MultiTLAgent {
             nSet.ability = Tools.getTemplate(pname).abilities['0'];
         }
         var basePokemon = new Pokemon(nSet, side);
-        
+
         return basePokemon;
     }
 

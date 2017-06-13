@@ -99,7 +99,7 @@ class PrunedBFSAgent {
         nstate.send = battleSend;
 
         var pQueue = [];
-        
+
         for (var choice in options) {
             var cstate = nstate.copy();
             cstate.baseMove = choice;

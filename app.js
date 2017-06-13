@@ -12,12 +12,14 @@ var BFSAgent = require('./agents/BFSAgent').Agent;
 var MinimaxAgent = require('./agents/MinimaxAgent').Agent;
 var SPAgent = require('./agents/TypeSelector').Agent;
 var PMMAgent = require('./agents/PBFS').Agent;
+var ProductionRuleAgent = require('./agents/ProductionRuleAgent').Agent;
+var OldAgent = require('./agents/ProductionRuleAgent').OldAgent;
 
 try {
     require.resolve('./zarel/config/config');
 } catch (err) {
     if (err.code !== 'MODULE_NOT_FOUND') throw err; // should never happen
-    
+
     console.log("config.js doesn't exist - creating one with default settings...");
     fs.writeFileSync(path.resolve(__dirname, 'config/config.js'),
         fs.readFileSync(path.resolve(__dirname, 'config/config-example.js'))
@@ -50,7 +52,7 @@ if (online) {
     var password = 'polyai';
     // This is where you would put the formats that you are interested in having your AI participate in.
     var formats = ['randombattle', 'randommirror'];
-    
+
     // This is pretty much all netcode.  Not a ton to worry about here.
     var battles = new hashmap.HashMap();
     var challstr = '';
@@ -176,9 +178,25 @@ else {
     console.time('gametime');
     for (var i = 0; i < 15; i++) {
         var game = new OfflineGame();
-        scores.push(game.playGames(new BFSAgent(), new RandomAgent(), 1, 'competitive'));
-        
+        scores.push(game.playGames(new ProductionRuleAgent(), new OTLAgent(), 1, 'competitive'));
+
     }
     console.timeEnd('gametime');
     console.log(scores);
+
+    var leftWins = 0;
+    var rightWins = 0;
+    var draws = 0;
+
+    for(var i = 0; i < scores.length; i++){
+      var score = scores[i];
+      if(score[0] === score[1]){
+        draws++;
+      }else if(score[0] > score[1]){
+        leftWins++;
+      }else{
+        rightWins++;
+      }
+    }
+    console.log("Left: " + leftWins + " Right: " + rightWins + " Draw: " + draws);
 }

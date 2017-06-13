@@ -71,8 +71,8 @@ class TypeSelector {
         // Consider Switching
         var btyping = -3;
         for (var option in options) {
-            if (option.startsWith('switch')) {   
-                var ttotal = 0;     
+            if (option.startsWith('switch')) {
+                var ttotal = 0;
                 var choice = options[option];
                 var poke = mySide.pokemon[choice.index];
                 for (var mtype of poke.types) {
