@@ -12,10 +12,50 @@ class MCTS{
     this.timeBudget = 5 * 1000;
     this.name = "MCTS";
     this.skipRolloutThreshold = 0.15;
+    this.assumptions = {};
+    this.logLength = 0;
+  }
+
+  handleAssumptions(gameState, n){
+    const pokemon = gameState.sides[1 - n].active[0];
+    const lastMove = pokemon.lastMove;
+
+    const logLength = gameState.log.length;
+    if(logLength > this.logLength){
+      this.logLength = logLength;
+    }else if(logLength < this.logLength){
+      this.logLength = 0;
+      this.assumptions = {};
+      //console.log("Resetting Assumptions");
+    }
+
+    if(!this.assumptions[pokemon.name]){
+      this.assumptions[pokemon.name] = [];
+      //console.log("New Pokemon", pokemon.name);
+    }
+
+    if(lastMove == "") {
+      //console.log("Didn't make a move");
+      return;
+    }
+
+    if(this.assumptions[pokemon.name].indexOf(lastMove) == -1){
+      this.assumptions[pokemon.name].push(lastMove);
+      //console.log("Adding Move", lastMove);
+    }
   }
 
   decide(gameState, options, mySide, forceSwitch){
-    if(forceSwitch) return this.policy.decide(gameState, options, mySide, forceSwitch);
+    this.handleAssumptions(gameState, mySide.n);
+    console.log("SWITCH", forceSwitch);
+    console.log("My HP", mySide.active[0].hp);
+    console.log("Their HP", gameState.sides[1 - mySide.n].active[0].hp);
+    if(forceSwitch) {
+      var move = this.policy.decide(gameState, options, mySide, forceSwitch);
+      console.log("MOVE", move);
+      return move;
+    }
+
     var startTime = new Date().getTime();
     // console.log("Root Options", options);
     var nState = gameState.copy();
@@ -24,7 +64,7 @@ class MCTS{
     nState.isTerminal = false;
     nState.me = mySide.n;
 
-    nState.send = function (type, data){
+    function battleSend(type, data){
       // Knocked other guy out
       const otherSide = this.sides[1 - this.me];
       const mySide = this.sides[this.me];
@@ -37,10 +77,11 @@ class MCTS{
       }else if(otherSide.currentRequest == 'switch'){
         this.isTerminal = true;
       }
-    };
+    }
+
+    nState.send = battleSend;
 
     nState.heuristic = function(){
-
       const mySide = this.sides[this.me];
       const theirSide = this.sides[1 - this.me];
       var myHP = 0;
@@ -48,7 +89,6 @@ class MCTS{
       for(var i = 0; i < mySide.pokemon.length; i++){
         myHP += mySide.pokemon[i].hp;
         myMaxHP += mySide.pokemon[i].maxhp;
-
       }
 
       var myHpFraction = myHP / myMaxHP;
@@ -57,11 +97,18 @@ class MCTS{
       return (myHpFraction - (theirHpFraction));
     };
 
+
+
     var root = new Node();
 
     var iterations = 0;
     while((new Date()).getTime() - startTime <= this.timeBudget){
       var iterState = nState.copy();
+      //console.log("QUERY BEFORE", iterState.sides[1 - mySide.n].active[0].hp);
+      // Fudge the other pokemon
+      iterState = this.fudgeState(iterState, mySide);
+      //console.log("QUERY AFTER", iterState.sides[1 - mySide.n].active[0].hp);
+
       //console.log("ITERATION: ", iterations);
       var current = this.select(root, iterState, mySide);
       //console.log("SELECT returned: ", current);
@@ -69,8 +116,22 @@ class MCTS{
       current.backup(score);
       iterations++;
     }
+    var move = root.getBestNode().moveToThisState;
+    console.log("CHOSE", move);
+    return move;
+  }
 
-    return root.getBestNode().moveToThisState;
+  fudgeState(iterState, mySide){
+    const side  = iterState.sides[1 - mySide.n];
+    const pokemon = side.active[0];
+    const pname = pokemon.name;
+    const pgender = pokemon.gender;
+    const plevel = pokemon.level;
+    const hp = pokemon.hp;
+
+    side.active[0] = this.assumePokemon(pname, plevel, pgender, side);
+    side.active[0].hp = hp;
+    return iterState;
   }
 
   select(root, iterState, mySide){
@@ -90,28 +151,32 @@ class MCTS{
   }
 
   policyDecide(iterState, side){
-    const lockedMove = iterState.sides[side].active[0].getLockedMove();
-    if(lockedMove != false){
-      return "move " + lockedMove;
+    if(iterState.me == side){
+      const lockedMove = iterState.sides[side].active[0].getLockedMove();
+      if(lockedMove != false){
+        return "move " + lockedMove;
+      }
     }
-    return this.policy.decide(
+    var option = this.policy.decide(
       iterState,
       this.getOptions(iterState, side),
       iterState.sides[side],
       false
     );
+    if(option) return option;
+    console.log("No Move Chosen");
+    return "";
   }
 
-  forwardState(iterState, player1Choice = null, player2Choice = null){
-    // var decision = this.policyDecide(iterState, 0);
-    // if(!decision){
-    //   console.log(0, iterState.sides[0].active[0].getLockedMove());
-    //   const active = iterState.sides[0].getRequestData().active;
-    //   if(active){console.log(0, active[0].moves);}
-    // }
-    iterState.choose('p1', (player1Choice) ? player1Choice : this.policyDecide(iterState, 0));
-    // decision = this.policyDecide(iterState, 1);
-    iterState.choose('p2', (player2Choice) ? player2Choice : this.policyDecide(iterState, 1));
+  forwardState(iterState, firstChoice = null, secondChoice = null){
+    var firstPlayer = (iterState.me == 0) ? 'p1' : 'p2';
+    var firstIndex = iterState.me;
+    var secondPlayer = (iterState.me == 0) ? 'p2' : 'p1';
+    var secondIndex = 1 - iterState.me;
+
+    iterState.choose(firstPlayer, (firstChoice) ? firstChoice : this.policyDecide(iterState, firstIndex));
+    iterState.choose(secondPlayer, (secondChoice) ? secondChoice : this.policyDecide(iterState, secondIndex));
+
     return iterState;
   }
 
@@ -153,11 +218,13 @@ class MCTS{
         }
       }
     }
-    console.log("Parent!");
     return parent;
   }
 
   assumePokemon(pname, plevel, pgender, side) {
+    if(!this.assumptions[pname]){
+      console.log("ASSUME for first time:", pname, plevel, pgender, side.n);
+    }
       var template = Tools.getTemplate(pname);
       var nSet = {
           species: pname,
@@ -176,9 +243,24 @@ class MCTS{
           nature: "Hardy",
           moves: [],
       };
-      for (var moveid in template.randomBattleMoves) {
-          nSet.moves.push(toId(template.randomBattleMoves[moveid]));
+
+      if(this.assumptions[pname]){
+        // We can use some moves
+        for(var moveid in this.assumptions[pname]){
+          nSet.moves.push(toId(this.assumptions[pname][moveid]));
+        }
       }
+
+      // Complete the list
+      while(nSet.moves.length < 4){
+          var choice = this.randomListItem(template.randomBattleMoves);
+          if(nSet.moves.indexOf(choice) == -1){
+            nSet.moves.push(choice);
+          }
+      }
+
+      // console.log("Chosen moves", pname, nSet.moves);
+
       var basePokemon = new Pokemon(nSet, side);
       // If the species only has one ability, then the pokemon's ability can only have the one ability.
       // Barring zoroark, skill swap, and role play nonsense.
@@ -188,10 +270,15 @@ class MCTS{
           basePokemon.ability = basePokemon.baseAbility;
           basePokemon.abilityData = { id: basePokemon.ability };
       }
+      //this.assumptions[pname] = basePokemon;
       return basePokemon;
   }
 
   digest(line) {
+  }
+
+  randomListItem(list){
+    return list[Math.floor((Math.random() * list.length))];
   }
 }
 

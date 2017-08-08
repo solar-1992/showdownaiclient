@@ -14,6 +14,9 @@ class Rule {
 // Used as a better place to put simple information looking up. Not an actual rule for calculating
 class Query extends Rule{
   execute(gameState, options, mySide, forceSwitch){
+    // console.log(gameState.sides[1 - mySide.n].active[0].lastMove);
+    //console.log("QUERY", gameState.sides[1 - mySide.n].active[0].hp);
+    // console.log("QUERY", gameState.log.length);
     // for (var move in options) {
       // if (options.hasOwnProperty(move)) {
         //var active = gameState.sides[mySide.n].active[0];

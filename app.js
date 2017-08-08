@@ -180,7 +180,6 @@ else {
     for (var i = 0; i < 1; i++) {
         var game = new OfflineGame();
         scores.push(game.playGames(new MCTS(new RandomAgent()), new OTLAgent(), 1, 'competitive'));
-
     }
     console.timeEnd('gametime');
     console.log(scores);

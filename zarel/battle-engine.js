@@ -3133,6 +3133,7 @@ let Battle = (() => {
 		this.win();
 	};
 	Battle.prototype.win = function (side) {
+		//console.log("ENDED", side);
 		if (this.ended) {
 			return false;
 		}
@@ -3305,7 +3306,7 @@ let Battle = (() => {
 	Battle.prototype.nextTurn = function () {
 		this.turn++;
         if (this.turn >= 200) {
-            this.tie();    
+            this.tie();
         }
 		let allStale = true;
 		let oneStale = false;
@@ -4562,8 +4563,10 @@ let Battle = (() => {
 			this.queue.unshift({choice: 'beforeTurn', priority: 100});
 			this.midTurn = true;
 		}
-
+		// var count = 0;
 		while (this.queue.length) {
+			// console.log("COUNT", count);
+			// count++;
 			let decision = this.queue.shift();
 
 			this.runDecision(decision);
@@ -4704,7 +4707,7 @@ let Battle = (() => {
                 side.forceSkip();
                 break;
 			}
-            
+
 
 		}
 
@@ -4782,7 +4785,7 @@ let Battle = (() => {
 				if (i + 1 < parts.length) return null;
 				hasDefault = true;
 			}
-            
+
 			switch (side.currentRequest) {
 			case 'teampreview':
 				if (choice !== 'team' && choice !== 'default') return null;
