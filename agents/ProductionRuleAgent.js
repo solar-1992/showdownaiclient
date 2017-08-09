@@ -14,7 +14,7 @@ class ProductionRuleAgent {
       this.name = "PRA";
       this.rules = [];
       this.rules.push(new Rule.Query());
-      this.rules.push(new Move.ForceSkipWhenNoChoice());
+      // this.rules.push(new Move.ForceSkipWhenNoChoice());
       // this.rules.push(new Switch.TypeAdvantage());
       this.rules.push(new Status.TryToHeal(0.75));
       this.rules.push(new Status.TryToStatus(Status.EFFECTS['Sleep']));

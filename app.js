@@ -177,9 +177,9 @@ else {
     var scores = [];
 
     console.time('gametime');
-    for (var i = 0; i < 1; i++) {
+    for (var i = 0; i < 15; i++) {
         var game = new OfflineGame();
-        scores.push(game.playGames(new MCTS(new RandomAgent()), new OTLAgent(), 1, 'competitive'));
+        scores.push(game.playGames(new ProductionRuleAgent(true), new OTLAgent(), 2, 'competitive'));
     }
     console.timeEnd('gametime');
     console.log(scores);
